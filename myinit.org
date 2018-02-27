@@ -3,12 +3,12 @@
 * Config elements
 
 #+BEGIN_SRC emacs-lisp
-(load-theme 'leuven)
+(load-theme 'leuven t)
 
 (setq auto-save-default nil)
 (setq make-backup-files nil)
 
-(defun my-org-confirm-babel-evaluate (lang body)
+(defun my-org-confirm-pppbabel-evaluate (lang body)
             (not (string= lang "emacs-lisp")))
 (setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
 #+END_SRC
@@ -16,32 +16,39 @@
 #+RESULTS:
 : my-org-confirm-babel-evaluate
 
-* Keybindings
+
+** Counsel
+
+#+BEGIN_SRC emacs-lisp
+(use-package counsel :ensure t
+  :bind*                           ; load counsel when pressed
+  (("M-x"     . counsel-M-x)       ; M-x use counsel
+   ("C-x C-f" . counsel-find-file) ; C-x C-f use counsel-find-file
+   ("C-x C-r" . counsel-recentf)   ; search recently edited files
+   ("C-c l"   . counsel-locate))   ; search for files or else using locate
+  )
+#+END_SRC
+
 
 ** Helm
 
 #+BEGIN_SRC emacs-lisp
-(require 'helm-config)
-(setq helm-buffers-fuzzy-matching t
-      helm-recentf-fuzzy-match    t)
-
-(global-set-key (kbd "C-c h") 'helm-command-prefix)
-(global-unset-key (kbd "C-x c"))
-
-(global-set-key (kbd "M-x") 'helm-M-x)
 (global-set-key (kbd "M-y") 'helm-show-kill-ring)
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
 (global-set-key (kbd "C-x b") 'helm-mini)
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
-(global-set-key (kbd "C-c h g") 'helm-google-suggest)
-
 (require 'helm-descbinds)
 (helm-descbinds-mode)
 (global-set-key (kbd "C-c d") 'helm-descbinds)
 #+END_SRC
 
-#+RESULTS:
-: helm-descbinds
+
+(require 'helm-config)
+(setq helm-buffers-fuzzy-matching t
+      helm-recentf-fuzzy-match    t)
+(global-set-key (kbd "C-c h") 'helm-command-prefix)
+(global-unset-key (kbd "C-x c"))
+(global-set-key (kbd "C-c h g") 'helm-google-suggest)
+
 
 ** Org
 
@@ -50,13 +57,14 @@
 (global-set-key (kbd "C-c c") 'org-capture)
 #+END_SRC
 
+
+#+RESULTS:
+: counsel-locate
+
+
 ** Swiper
 
 #+BEGIN_SRC emacs-lisp
-(use-package counsel
-  :ensure t
-  )
-
 (use-package swiper
   :ensure try
   :config
@@ -65,29 +73,13 @@
     (setq ivy-use-virtual-buffers t)
     (global-set-key "\C-s" 'swiper)
     (global-set-key (kbd "C-c C-r") 'ivy-resume)
-    (global-set-key (kbd "<f6>") 'ivy-resume)
-    (global-set-key (kbd "M-x") 'counsel-M-x)
-    (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-    (global-set-key (kbd "<f1> f") 'counsel-describe-function)
-    (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
-    (global-set-key (kbd "<f1> l") 'counsel-load-library)
-    (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
-    (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
-    (global-set-key (kbd "C-c g") 'counsel-git)
-    (global-set-key (kbd "C-c j") 'counsel-git-grep)
-    (global-set-key (kbd "C-c k") 'counsel-ag)
-    (global-set-key (kbd "C-x l") 'counsel-locate)
-    (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
-    (define-key read-expression-map (kbd "C-r") 'counsel-expression-history)
-    ))
+        ))
 
 #+END_SRC
 
 #+RESULTS:
 : t
-
-
-* Org-mode
+** Org-mode
 #+BEGIN_SRC emacs-lisp
 (use-package org-bullets
   :ensure t
@@ -134,6 +126,20 @@
 #+RESULTS:
 | lambda | nil | (interactive (org-time-stamp-inactive)) |
 
-* Installed Packages 
+** Dashboard
 
-(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception)
+#+BEGIN_SRC emacs-lisp
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+#+END_SRC
+
+* Install Packages 
+
+(setq package-list '(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception))
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+(dolist (package package-list)
+  (unless (package-installed-p package)
+    (package-install package)))

@@ -119,4 +119,3 @@
     (mapcar (function kill-buffer-force) bdiff)
     )
   )
-

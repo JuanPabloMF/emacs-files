@@ -5,27 +5,26 @@
 
 ** Rebinded basic commands
 
-(("M-x"     . counsel-M-x)     
-("C-x C-f" . counsel-find-file)
-("C-x C-r" . counsel-recentf)  
-("C-c l"   . counsel-locate))  
-("M-y" . 'helm-show-kill-ring)
-("C-x b" . 'helm-mini)
-("C-x C-b" . 'helm-buffers-list))
-(global-set-key "\C-s" 'swiper)
-(global-set-key (kbd "C-c C-r") 'ivy-resume)
-("C-c d" . 'helm-descbinds))
+| M-x     | counsel-M-x          |
+| C-x C-f | counsel-find-file    |
+| C-x C-r | counsel-recentf      |
+| C-c l   | counsel-locate       |
+| M-y     | 'helm-show-kill-ring |
+| C-x b   | 'helm-mini           |
+| C-x C-b | 'helm-buffers-list   |
+| C-s     | 'swiper              |
+| C-c C-r | 'ivy-resume          |
+| C-c d   | 'helm-descbinds      |
 
 ** Movement and search
 
-("M-s" . avy-goto-char))
-("C-x C-e" . mc/edit-lines)
-("C->" . mc/mark-next-like-this)
-("C-<" . 'mc/mark-previous-like-this)
-(global-set-key (kbd "M-o") 'ace-window))
-
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key (kbd "C-c c") 'org-capture)
+| M-s     | avy-goto-char              |
+| C-x C-l | mc/edit-lines              |
+| C->     | mc/mark-next-like-this     |
+| C-<     | mc/mark-previous-like-this |
+| M-o     | ace-window                 |
+| C-c a   | org-agenda                 |
+| C-c c   | org-capture                |
 
 * Config elements
 
@@ -78,7 +77,6 @@
 
 #+RESULTS:
 : helm-descbinds
-
 
 ** Org
 
@@ -139,7 +137,6 @@
 
 #+END_SRC
 
-
 ** Org-babel
 
 #+BEGIN_SRC emacs-lisp
@@ -153,7 +150,6 @@
 #+END_SRC
 #+RESULTS:
 | /usr/bin | /bin | /usr/sbin | /sbin | /Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec | /Applications/Emacs.app/Contents/MacOS/bin | /opt/local/bin |
-
 
 
 ** Dashboard
@@ -182,7 +178,7 @@
   (use-package multiple-cursors
     :ensure t
     :bind*
-    ("C-x C-e" . mc/edit-lines)
+    ("C-x C-l" . mc/edit-lines)
     ("C->" . mc/mark-next-like-this)
     ("C-<" . 'mc/mark-previous-like-this)
     :config
@@ -207,6 +203,17 @@
 #+RESULTS:
 : t
 
+** Ox-hugo
+#+BEGIN_SRC emacs-lisp
+(use-package ox-hugo
+  :after ox)
+
+
+#+END_SRC
+
+#+RESULTS:
+: org-define-error
+
 * Install Packages 
 
 (setq package-list '(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception))
@@ -216,3 +223,31 @@
 (dolist (package package-list)
   (unless (package-installed-p package)
     (package-install package)))
+
+* Custom code
+
+#+BEGIN_SRC emacs-lisp
+(require 'cl)
+
+(defun kill-buffer-force (buffer)
+  (set-buffer buffer)
+  (set-buffer-modified-p nil)
+  (kill-buffer buffer)
+  )
+
+(defun with-current-buffer-list (commands)
+  "Lets you run commands without leaving newly opened buffers"
+  (save-excursion
+    (setq pbuffers (mapcar (function buffer-name) (buffer-list)))
+    (funcall commands)
+    (setq nbuffers (mapcar (function buffer-name) (buffer-list)))
+    (setq bdiff (set-difference nbuffers pbuffers))
+    (mapcar (function kill-buffer-force) bdiff)
+    )
+  )
+#+END_SRC
+
+#+RESULTS:
+: with-current-buffer-list
+
+

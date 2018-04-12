@@ -1,6 +1,4 @@
-
 (load-theme 'leuven t)
-
 (setq auto-save-default nil)
 (setq make-backup-files nil)
 
@@ -43,10 +41,6 @@
     (global-set-key (kbd "C-c C-r") 'ivy-resume)
         ))
 
-(custom-set-variables
- '(org-directory "~/Dropbox/orgfiles")
- )
-
 (use-package org-bullets
   :ensure t
   :config
@@ -55,37 +49,28 @@
 (use-package org-ac
   :ensure t
   :init (progn
-          (require 'org-ac)
-          (org-ac/config-default)
-          ))
+	  (require 'org-ac)
+	  (org-ac/config-default)
+	  ))
 
 (setq org-agenda-custom-commands
       '(("c" "Simple agenda view"
-         ((agenda "")
-          (alltodo "")))))
+	 ((agenda "")
+	  (alltodo "")))))
 
 (setq org-agenda-files (list "~/Dropbox/orgfiles/gcal.org"))
 
 (setq org-capture-templates
       '(("a" "Appointment" entry (file  "~/Dropbox/orgfiles/gcal.org" )
-         "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-        ("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
-         "* TODO %?\n%u" :prepend t)
-        ))
+	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+	("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
+	 "* TODO %?\n%u" :prepend t)
+	))
 
-(defadvice org-capture-finalize 
-    (after delete-capture-frame activate)  
-  "Advise capture-finalize to close the frame"  
-  (if (equal "capture" (frame-parameter nil 'name))  
-      (delete-frame)))
-(defadvice org-capture-destroy 
-    (after delete-capture-frame activate)  
-  "Advise capture-destroy to close the frame"  
-  (if (equal "capture" (frame-parameter nil 'name))  
-      (delete-frame)))  
+(setq org-confirm-babel-evaluate nil)   ;don't prompt me to confirm everytime I want to evaluate a block
 
-(define-key org-mode-map (kbd "C-c >") (lambda () (interactive (org-time-stamp-inactive))))
-
+;;; display/update images in the buffer after I evaluate
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
 
 (add-to-list 'org-structure-template-alist
              '("p" "#+BEGIN_SRC ipython :session :exports both :results raw drawer\n?\n#+END_SRC"))
@@ -94,11 +79,6 @@
   :config
   (dashboard-setup-startup-hook))
 
-(setq org-confirm-babel-evaluate nil)   ;don't prompt me to confirm everytime I want to evaluate a block
-
-;;; display/update images in the buffer after I evaluate
-(add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
-
 (use-package avy
   :ensure t
   :bind ("M-s" . avy-goto-char))
@@ -106,7 +86,7 @@
 (use-package multiple-cursors
     :ensure t
     :bind*
-    ("C-x C-e" . mc/edit-lines)
+    ("C-x C-l" . mc/edit-lines)
     ("C->" . mc/mark-next-like-this)
     ("C-<" . 'mc/mark-previous-like-this)
     :config
@@ -115,12 +95,28 @@
 
 (use-package ace-window
   :ensure t
-  :init
-  (progn
-  (setq aw-scope 'frame)
-  (global-set-key (kbd "C-x O") 'other-frame)
-    (global-set-key [remap other-window] 'ace-window)
-    (custom-set-faces
-     '(aw-leading-char-face
-       ((t (:inherit ace-jump-face-foreground :height 3.0))))) 
-    ))
+  :config
+  (global-set-key (kbd "M-o") 'ace-window))
+
+(use-package ox-hugo
+  :after ox)
+
+(require 'cl)
+
+(defun kill-buffer-force (buffer)
+  (set-buffer buffer)
+  (set-buffer-modified-p nil)
+  (kill-buffer buffer)
+  )
+
+(defun with-current-buffer-list (commands)
+  "Lets you run commands without leaving newly opened buffers"
+  (save-excursion
+    (setq pbuffers (mapcar (function buffer-name) (buffer-list)))
+    (funcall commands)
+    (setq nbuffers (mapcar (function buffer-name) (buffer-list)))
+    (setq bdiff (set-difference nbuffers pbuffers))
+    (mapcar (function kill-buffer-force) bdiff)
+    )
+  )
+

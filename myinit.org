@@ -4,7 +4,6 @@
 * Personal Keybindings
 
 ** Rebinded basic commands
-
 | M-x     | counsel-M-x         |
 | C-x C-f | counsel-find-file   |
 | C-x C-r | counsel-recentf     |
@@ -14,23 +13,18 @@
 | C-x C-b | helm-buffers-list   |
 | C-s     | swiper              |
 | C-c C-r | ivy-resume          |
-
 ** Movement and search
-
 | M-s     | avy-goto-char              |
-| C-x C-l | mc/edit-lines              |
-| C->     | mc/mark-next-like-this     |
-| C-<     | mc/mark-previous-like-this |
 | M-o     | ace-window                 |
 | C-c a   | org-agenda                 |
 | C-c c   | org-capture                |
-
 ** Hydras
 
-| C-x m   | hydra-macro         |
-| C-x d   | hydra-dired         |
-| C-c w   | hydra-org-clock     |
-| C-c d   | hydra-org-template  |
+| C-x m | hydra-macro        |
+| M-r   | hydra-rectangle    |
+| C-x d | hydra-dired        |
+| C-c w | hydra-org-clock    |
+| C-c t | hydra-org-template |
 
 * Config elements
 
@@ -153,7 +147,7 @@
 		      ("," edit-kbd-macro)
 		      ("q" nil :color blue))
 		    )
-    (global-set-key (kbd "C-x r")
+    (global-set-key (kbd "M-r")
 		    (defhydra hydra-rectangle (:body-pre (rectangle-mark-mode 1)
 							 :color pink
 							 :post (deactivate-mark))
@@ -180,7 +174,7 @@
 		      ("p" kill-rectangle nil)
 		      ("o" nil nil))
 		    )
-    (global-set-key ("C-x d")
+    (global-set-key (kbd "C-x d")
 		    (defhydra hydra-dired (:hint nil :color pink)
 		      "
   _+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
@@ -203,7 +197,7 @@
 		      ("?" dired-summary)
 		      ("$" diredp-hide-subdir-nomove)
 		      ("A" dired-do-find-regexp)
-n		      ("C" dired-do-copy)        ;; Copy all marked files
+		      ("C" dired-do-copy)        ;; Copy all marked files
 		      ("D" dired-do-delete)
 		      ("E" dired-mark-extension)
 		      ("e" dired-ediff-files)
@@ -250,7 +244,7 @@ n		      ("C" dired-do-copy)        ;; Copy all marked files
 		      ("r" org-clock-report)
 		      ("?" (org-info "Clocking commands")))
 		    )
-    (global-set-key (kbd "C-x t")
+    (global-set-key (kbd "C-c t")
 		    (defhydra hydra-org-template (:color blue :hint nil)
 		      "
    _c_enter  _q_uote     _e_macs-lisp    _L_aTeX:
@@ -375,7 +369,6 @@ n		      ("C" dired-do-copy)        ;; Copy all marked files
 #+END_SRC
 
 * Install Packages 
-
 (setq package-list '(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception))
 (package-initialize)
 (unless package-archive-contents

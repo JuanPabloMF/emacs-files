@@ -363,6 +363,17 @@ n		      ("C" dired-do-copy)        ;; Copy all marked files
 #+RESULTS:
 : org-define-error
 
+* Custom code
+** Shell in other buffer
+#+BEGIN_SRC emacs-lisp
+(defun shell-other-window ()
+  "Open a `shell' in a new window."
+  (interactive)pP
+  (let ((buf (shell)))
+    (switch-to-buffer (other-buffer buf))
+    (switch-to-buffer-other-window buf)))
+#+END_SRC
+
 * Install Packages 
 
 (setq package-list '(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception))
@@ -373,74 +384,4 @@ n		      ("C" dired-do-copy)        ;; Copy all marked files
   (unless (package-installed-p package)
     (package-install package)))
 
-* Custom code
 
-** Shell in other buffer
-
-#+BEGIN_SRC emacs-lisp
-(defun shell-other-window ()
-  "Open a `shell' in a new window."
-  (interactive)pP
-  (let ((buf (shell)))
-    (switch-to-buffer (other-buffer buf))
-    (switch-to-buffer-other-window buf)))
-#+END_SRC
-
-** Launch remote jupyter
-
-#+BEGIN_SRC emacs-lisp
-(require 'cl)
-
-(defun kill-buffer-force (buffer)
-  (set-buffer buffer)
-  (set-buffer-modified-p nil)
-  (kill-buffer buffer)
-  )
-
-(defun with-current-buffer-list (commands)
-  "Lets you run commands without leaving newly opened buffers"
-  (save-excursion
-    (setq pbuffers (mapcar (function buffer-name) (buffer-list)))
-    (funcall commands)
-    (setq nbuffers (mapcar (function buffer-name) (buffer-list)))
-    (setq bdiff (set-difference nbuffers pbuffers))
-    (mapcar (function kill-buffer-force) bdiff)
-    )
-  )
-#+END_SRC
-
-#+RESULTS:
-: with-current-buffer-list
-
-
-#+BEGIN_SRC emacs-lisp
-  (defun ds-launch-remote-kernel-fun (remote-port local-port environment)
-    (shell-here)
-    (let (rshell (buffer-name))
-     (process-send-string rshell (format "source activate %s \n" environment))
-     (process-send-string rshell (format "jupyter notebook --no-browser --port=%s --NotebookApp.password='sha1:92130a35245b:9eccdf9d81173944eb39e0054eb26255eb9c2a45'\n" remote-port)))
-    (dired "~/work")
-    (shell-here)
-    (let (lshell (buffer-name))
-      (process-send-string lshell (format "ssh -N -f -L localhost:%s:localhost:%s juanpablo@toretto\n" local-port remote-port)))
-    (ein:notebooklist-login (format "localhost:%s" local-port) "demo123")
-    ))
-
-    (defun ds-launch-remote-kernel()
-      (interactive)
-      (let ((remote-port (read-from-minibuffer "Launch remote kernel through which port? (default 8889)" "8889"))
-	    (local-port (read-from-minibuffer "Bind local on which port? (default 8888)" "8888"))
-	    (environment (read-from-minibuffer "Which environment (default root)" "root")))
-	(ds-launch-remote-kernel-fun remote-port local-port environment)))
-
-#+END_SRC
-
-#+RESULTS:
-: ds-launch-remote-kernel-fun
-
-#+BEGIN_SRC emacs-lisp
-(format "source activate %s" "10")
-#+END_SRC
-
-#+RESULTS:
-: source activate 10

@@ -5,16 +5,15 @@
 
 ** Rebinded basic commands
 
-| M-x     | counsel-M-x          |
-| C-x C-f | counsel-find-file    |
-| C-x C-r | counsel-recentf      |
-| C-c l   | counsel-locate       |
-| M-y     | 'helm-show-kill-ring |
-| C-x b   | 'helm-mini           |
-| C-x C-b | 'helm-buffers-list   |
-| C-s     | 'swiper              |
-| C-c C-r | 'ivy-resume          |
-| C-c d   | 'helm-descbinds      |
+| M-x     | counsel-M-x         |
+| C-x C-f | counsel-find-file   |
+| C-x C-r | counsel-recentf     |
+| C-c l   | counsel-locate      |
+| M-y     | helm-show-kill-ring |
+| C-x b   | helm-mini           |
+| C-x C-b | helm-buffers-list   |
+| C-s     | swiper              |
+| C-c C-r | ivy-resume          |
 
 ** Movement and search
 
@@ -26,6 +25,13 @@
 | C-c a   | org-agenda                 |
 | C-c c   | org-capture                |
 
+** Hydras
+
+| C-x m   | hydra-macro         |
+| C-x d   | hydra-dired         |
+| C-c w   | hydra-org-clock     |
+| C-c d   | hydra-org-template  |
+
 * Config elements
 
 #+BEGIN_SRC emacs-lisp
@@ -36,17 +42,6 @@
 
 #+RESULTS:
 : t
-
-** Shell in other buffer
-
-#+BEGIN_SRC emacs-lisp
-(defun shell-other-window ()
-  "Open a `shell' in a new window."
-  (interactive)
-  (let ((buf (shell)))
-    (switch-to-buffer (other-buffer buf))
-    (switch-to-buffer-other-window buf)))
-#+END_SRC
 
 ** Counsel
 
@@ -78,17 +73,6 @@
 #+RESULTS:
 : helm-descbinds
 
-** Org
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key (kbd "C-c c") 'org-capture)
-#+END_SRC
-
-
-#+RESULTS:
-: counsel-locate
-
 ** Swiper
 
 #+BEGIN_SRC emacs-lisp
@@ -105,7 +89,226 @@
 
 #+RESULTS:
 : t
+** Avy
+#+BEGIN_SRC emacs-lisp
+  (use-package avy
+    :ensure t
+    :bind ("M-s" . avy-goto-char))
+#+END_SRC
+
+#+RESULTS:
+: avy-goto-char
+
+** Ace window
+
+#+BEGIN_SRC emacs-lisp
+(use-package ace-window
+  :ensure t
+  :config
+  (global-set-key (kbd "M-o") 'ace-window))
+  #+END_SRC
+
+#+RESULTS:
+: t
+
+** Hydra
+
+#+BEGIN_SRC emacs-lisp
+  (use-package hydra 
+    :ensure hydra
+    :init 
+    (global-set-key (kbd "C-x m")
+		    (defhydra hydra-macro (:hint nil :color pink :pre 
+						 (when defining-kbd-macro
+						   (kmacro-end-macro 1)))
+		      "
+    ^Create-Cycle^   ^Basic^           ^Insert^        ^Save^         ^Edit^
+  ╭─────────────────────────────────────────────────────────────────────────╯
+       ^_i_^           [_e_] execute    [_n_] insert    [_b_] name      [_'_] previous
+       ^^↑^^           [_d_] delete     [_t_] set       [_K_] key       [_,_] last
+   _j_ ←   → _l_       [_o_] edit       [_a_] add       [_x_] register     
+       ^^↓^^           [_r_] region     [_f_] format    [_B_] defun
+       ^_k_^           [_m_] step
+      ^^   ^^          [_s_] swap
+  "
+		      ("j" kmacro-start-macro :color blue)
+		      ("l" kmacro-end-or-call-macro-repeat)
+		      ("i" kmacro-cycle-ring-previous)
+		      ("k" kmacro-cycle-ring-next)
+		      ("r" apply-macro-to-region-lines)
+		      ("d" kmacro-delete-ring-head)
+		      ("e" kmacro-end-or-call-macro-repeat)
+		      ("o" kmacro-edit-macro-repeat)
+		      ("m" kmacro-step-edit-macro)
+		      ("s" kmacro-swap-ring)
+		      ("n" kmacro-insert-counter)
+		      ("t" kmacro-set-counter)
+		      ("a" kmacro-add-counter)
+		      ("f" kmacro-set-format)
+		      ("b" kmacro-name-last-macro)
+		      ("K" kmacro-bind-to-key)
+		      ("B" insert-kbd-macro)
+		      ("x" kmacro-to-register)
+		      ("'" kmacro-edit-macro)
+		      ("," edit-kbd-macro)
+		      ("q" nil :color blue))
+		    )
+    (global-set-key (kbd "C-x r")
+		    (defhydra hydra-rectangle (:body-pre (rectangle-mark-mode 1)
+							 :color pink
+							 :post (deactivate-mark))
+		      "
+    ^_k_^     _d_elete    _s_tring     |\\     _,,,--,,_
+  _h_   _l_   _o_k        _y_ank       /,`.-'`'   ._  \-;;,_
+    ^_j_^     _n_ew-copy  _r_eset     |,4-  ) )_   .;.(  `'-'
+  ^^^^        _e_xchange  _u_ndo     '---''(_/._)-'(_\_)
+  ^^^^        ^ ^         _p_aste
+  "
+		      ("h" backward-char nil)
+		      ("l" forward-char nil)
+		      ("k" previous-line nil)
+		      ("j" next-line nil)
+		      ("e" exchange-point-and-mark nil)
+		      ("n" copy-rectangle-as-kill nil)
+		      ("d" delete-rectangle nil)
+		      ("r" (if (region-active-p)
+			       (deactivate-mark)
+			     (rectangle-mark-mode 1)) nil)
+		      ("y" yank-rectangle nil)
+		      ("u" undo nil)
+		      ("s" string-rectangle nil)
+		      ("p" kill-rectangle nil)
+		      ("o" nil nil))
+		    )
+    (global-set-key ("C-x d")
+		    (defhydra hydra-dired (:hint nil :color pink)
+		      "
+  _+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
+  _C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
+  _D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
+  _R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
+  _Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
+  _S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
+  _r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
+  _z_ compress-file  _A_ find regexp
+  _Z_ compress       _Q_ repl regexp
+
+  T - tag prefix
+  "
+		      ("\\" dired-do-ispell)
+		      ("(" dired-hide-details-mode)
+		      (")" dired-omit-mode)
+		      ("+" dired-create-directory)
+		      ("=" diredp-ediff)         ;; smart diff
+		      ("?" dired-summary)
+		      ("$" diredp-hide-subdir-nomove)
+		      ("A" dired-do-find-regexp)
+n		      ("C" dired-do-copy)        ;; Copy all marked files
+		      ("D" dired-do-delete)
+		      ("E" dired-mark-extension)
+		      ("e" dired-ediff-files)
+		      ("F" dired-do-find-marked-files)
+		      ("G" dired-do-chgrp)
+		      ("g" revert-buffer)        ;; read all directories again (refresh)
+		      ("i" dired-maybe-insert-subdir)
+		      ("l" dired-do-redisplay)   ;; relist the marked or singel directory
+		      ("M" dired-do-chmod)
+		      ("m" dired-mark)
+		      ("O" dired-display-file)
+		      ("o" dired-find-file-other-window)
+		      ("Q" dired-do-find-regexp-and-replace)
+		      ("R" dired-do-rename)
+		      ("r" dired-do-rsynch)
+		      ("S" dired-do-symlink)
+		      ("s" dired-sort-toggle-or-edit)
+		      ("t" dired-toggle-marks)
+		      ("U" dired-unmark-all-marks)
+		      ("u" dired-unmark)
+		      ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
+		      ("w" dired-kill-subdir)
+		      ("Y" dired-do-relsymlink)
+		      ("z" diredp-compress-this-file)
+		      ("Z" dired-do-compress)
+		      ("q" nil)
+		      ("." nil :color blue)))
+    (global-set-key (kbd "C-c w")
+		    (defhydra hydra-org-clock (:color blue :hint nil)
+		      "
+  Clock   In/out^     ^Edit^   ^Summary     (_?_)
+  -----------------------------------------
+	  _i_n         _e_dit   _g_oto entry
+	  _c_ontinue   _q_uit   _d_isplay
+	  _o_ut        ^ ^      _r_eport
+	"
+		      ("i" org-clock-in)
+		      ("o" org-clock-out)
+		      ("c" org-clock-in-last)
+		      ("e" org-clock-modify-effort-estimate)
+		      ("q" org-clock-cancel)
+		      ("g" org-clock-goto)
+		      ("d" org-clock-display)
+		      ("r" org-clock-report)
+		      ("?" (org-info "Clocking commands")))
+		    )
+    (global-set-key (kbd "C-x t")
+		    (defhydra hydra-org-template (:color blue :hint nil)
+		      "
+   _c_enter  _q_uote     _e_macs-lisp    _L_aTeX:
+   _l_atex   _E_xample   _p_erl          _i_ndex:
+   _a_scii   _v_erse     _P_erl tangled  _I_NCLUDE:
+   _s_rc     _n_ote      plant_u_ml      _H_TML:
+   _h_tml    ^ ^         ^ ^             _A_SCII:
+  "
+		      ("s" (hot-expand "<s"))
+		      ("E" (hot-expand "<e"))
+		      ("q" (hot-expand "<q"))
+		      ("v" (hot-expand "<v"))
+		      ("n" (hot-expand "<not"))
+		      ("c" (hot-expand "<c"))
+		      ("l" (hot-expand "<l"))
+		      ("h" (hot-expand "<h"))
+		      ("a" (hot-expand "<a"))
+		      ("L" (hot-expand "<L"))
+		      ("i" (hot-expand "<i"))
+		      ("e" (hot-expand "<s" "emacs-lisp"))
+		      ("p" (hot-expand "<s" "perl"))
+		      ("u" (hot-expand "<s" "plantuml :file CHANGE.png"))
+		      ("P" (hot-expand "<s" "perl" ":results output :exports both :shebang \"#!/usr/bin/env perl\"\n"))
+		      ("I" (hot-expand "<I"))
+		      ("H" (hot-expand "<H"))
+		      ("A" (hot-expand "<A"))
+		      ("<" self-insert-command "ins")
+		      ("o" nil "quit"kk))
+		    )
+    )
+
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC emacs-lisp
+(setq org-src-tab-acts-natively t)
+#+END_SRC
+
+#+RESULTS:
+: t
+
+** Dashboard
+
+#+BEGIN_SRC emacs-lisp
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+#+END_SRC
+
+#+END_SRC
+
 ** Org-mode
+
+#+BEGIN_SRC emacs-lisp
+(global-set-key "\C-ca" 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
+#+END_SRC
 
 #+BEGIN_SRC emacs-lisp
 (use-package org-bullets
@@ -151,64 +354,10 @@
 #+RESULTS:
 | /usr/bin | /bin | /usr/sbin | /sbin | /Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec | /Applications/Emacs.app/Contents/MacOS/bin | /opt/local/bin |
 
-
-** Dashboard
-
-#+BEGIN_SRC emacs-lisp
-(use-package dashboard
-  :config
-  (dashboard-setup-startup-hook))
-#+END_SRC
-
-#+END_SRC
-
-** Avy
-#+BEGIN_SRC emacs-lisp
-  (use-package avy
-    :ensure t
-    :bind ("M-s" . avy-goto-char))
-#+END_SRC
-
-#+RESULTS:
-: avy-goto-char
-
-** Multiple cursors
-
-#+BEGIN_SRC emacs-lisp
-  (use-package multiple-cursors
-    :ensure t
-    :bind*
-    ("C-x C-l" . mc/edit-lines)
-    ("C->" . mc/mark-next-like-this)
-    ("C-<" . 'mc/mark-previous-like-this)
-    :config
-    (setq mc/always-run-for-all t)
-)
-#+END_SRC
-
-
-
-#+RESULTS:
-: mc/mark-previous-like-this
-
-** Ace window
-
-#+BEGIN_SRC emacs-lisp
-(use-package ace-window
-  :ensure t
-  :config
-  (global-set-key (kbd "M-o") 'ace-window))
-  #+END_SRC
-
-#+RESULTS:
-: t
-
 ** Ox-hugo
 #+BEGIN_SRC emacs-lisp
 (use-package ox-hugo
   :after ox)
-
-
 #+END_SRC
 
 #+RESULTS:
@@ -225,6 +374,19 @@
     (package-install package)))
 
 * Custom code
+
+** Shell in other buffer
+
+#+BEGIN_SRC emacs-lisp
+(defun shell-other-window ()
+  "Open a `shell' in a new window."
+  (interactive)pP
+  (let ((buf (shell)))
+    (switch-to-buffer (other-buffer buf))
+    (switch-to-buffer-other-window buf)))
+#+END_SRC
+
+** Launch remote jupyter
 
 #+BEGIN_SRC emacs-lisp
 (require 'cl)
@@ -251,3 +413,34 @@
 : with-current-buffer-list
 
 
+#+BEGIN_SRC emacs-lisp
+  (defun ds-launch-remote-kernel-fun (remote-port local-port environment)
+    (shell-here)
+    (let (rshell (buffer-name))
+     (process-send-string rshell (format "source activate %s \n" environment))
+     (process-send-string rshell (format "jupyter notebook --no-browser --port=%s --NotebookApp.password='sha1:92130a35245b:9eccdf9d81173944eb39e0054eb26255eb9c2a45'\n" remote-port)))
+    (dired "~/work")
+    (shell-here)
+    (let (lshell (buffer-name))
+      (process-send-string lshell (format "ssh -N -f -L localhost:%s:localhost:%s juanpablo@toretto\n" local-port remote-port)))
+    (ein:notebooklist-login (format "localhost:%s" local-port) "demo123")
+    ))
+
+    (defun ds-launch-remote-kernel()
+      (interactive)
+      (let ((remote-port (read-from-minibuffer "Launch remote kernel through which port? (default 8889)" "8889"))
+	    (local-port (read-from-minibuffer "Bind local on which port? (default 8888)" "8888"))
+	    (environment (read-from-minibuffer "Which environment (default root)" "root")))
+	(ds-launch-remote-kernel-fun remote-port local-port environment)))
+
+#+END_SRC
+
+#+RESULTS:
+: ds-launch-remote-kernel-fun
+
+#+BEGIN_SRC emacs-lisp
+(format "source activate %s" "10")
+#+END_SRC
+
+#+RESULTS:
+: source activate 10

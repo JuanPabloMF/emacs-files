@@ -1,6 +1,4 @@
 #+STARTUP: overview
-
-
 * Personal Keybindings
 
 ** Rebinded basic commands
@@ -44,11 +42,14 @@
   :ensure t
   :bind*                           ; load counsel when pressed
   (("M-x"     . counsel-M-x)       ; M-x use counsel
-   ("C-x C-f" . counsel-find-file) ; C-x C-f use counsel-find-file
+;;   ("C-x C-f" . counsel-find-file) ; C-x C-f use counsel-find-file
    ("C-x C-r" . counsel-recentf)   ; search recently edited files
    ("C-c l"   . counsel-locate))   ; search for files or else using locate
   )
 #+END_SRC
+
+#+RESULTS:
+: counsel-locate
 
 ** Helm
 
@@ -57,7 +58,8 @@
   :bind*
   ("M-y" . 'helm-show-kill-ring)
   ("C-x b" . 'helm-mini)
-  ("C-x C-b" . 'helm-buffers-list))
+  ("C-x C-b" . 'helm-buffers-list)
+  ("C-x C-f" . 'helm-find-files))
 (use-package helm-descbinds
   :ensure t
   :bind*
@@ -107,6 +109,9 @@
 
 ** Hydra
 
+
+
+
 #+BEGIN_SRC emacs-lisp
   (use-package hydra 
     :ensure hydra
@@ -152,10 +157,10 @@
 							 :color pink
 							 :post (deactivate-mark))
 		      "
-    ^_k_^     _d_elete    _s_tring     |\\     _,,,--,,_
-  _h_   _l_   _o_k        _y_ank       /,`.-'`'   ._  \-;;,_
-    ^_j_^     _n_ew-copy  _r_eset     |,4-  ) )_   .;.(  `'-'
-  ^^^^        _e_xchange  _u_ndo     '---''(_/._)-'(_\_)
+    ^_k_^     _d_elete    _s_tring 
+  _h_   _l_   _o_k        _y_ank   
+    ^_j_^     _n_ew-copy  _r_eset  
+  ^^^^        _e_xchange  _u_ndo   
   ^^^^        ^ ^         _p_aste
   "
 		      ("h" backward-char nil)
@@ -280,13 +285,6 @@
 
 #+RESULTS:
 
-#+BEGIN_SRC emacs-lisp
-(setq org-src-tab-acts-natively t)
-#+END_SRC
-
-#+RESULTS:
-: t
-
 ** Dashboard
 
 #+BEGIN_SRC emacs-lisp
@@ -330,23 +328,112 @@
 	("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
 	 "* TODO %?\n%u" :prepend t)
 	))
-
-
 #+END_SRC
 
 ** Org-babel
 
 #+BEGIN_SRC emacs-lisp
 (setq org-confirm-babel-evaluate nil)   ;don't prompt me to confirm everytime I want to evaluate a block
-
+(setq org-src-fontify-natively t)
 ;;; display/update images in the buffer after I evaluate
 (add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
 
 (add-to-list 'org-structure-template-alist
              '("p" "#+BEGIN_SRC ipython :session :exports both :results raw drawer\n?\n#+END_SRC"))
 #+END_SRC
+
+<
 #+RESULTS:
 | /usr/bin | /bin | /usr/sbin | /sbin | /Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec | /Applications/Emacs.app/Contents/MacOS/bin | /opt/local/bin |
+
+#+BEGIN_SRC emacs-lisp
+(use-package ob-ipython
+  :after (org ob)
+  :config (setq ob-ipython-resources-dir ".ob-ipython-resrc/")
+  (defvar jupyter-local-runtime-dir (substring (shell-command-to-string (concat "jupyter --runtime-dir")) 0 -1))
+  (defun ob-ipython-generate-local-path-from-remote (session host params)
+    "Copy remote config to local, start a jupyter console to generate a new one."
+    (let* ((runtime-dir (substring (shell-command-to-string
+                                    (concat "ssh " host " jupyter --runtime-dir")) 0 -1))
+           (runtime-file (concat runtime-dir "/" "kernel-" session ".json"))
+           (tramp-path (concat "/ssh:" host ":" runtime-file))
+           (tramp-copy (concat jupyter-local-runtime-dir "/remote-" host "-kernel-" session ".json"))
+           (local-path (concat "Python:ob-ipython-" (file-name-sans-extension (file-name-nondirectory tramp-copy)) "-ssh.json")))
+      ;; scp remote file to local
+      (copy-file tramp-path tramp-copy t)
+      ;; connect to remote use new config
+      (let* ((python-shell-interpreter-interactive-arg " console --simple-prompt")
+             (python-shell-completion-native-enable nil)
+             (buf (python-shell-make-comint
+                   (concat ob-ipython-command " console --simple-prompt --existing " tramp-copy " --ssh " host)
+                   (concat "" local-path) t))
+             (proc (get-buffer-process buf))
+             (dir (cdr (assoc :pydir params))))
+        (sleep-for 3)
+        (if dir (with-current-buffer buf
+                  (setq-local default-directory dir)))
+        (format "*%s*" proc))))
+  (defun *org-babel-edit-prep:ipython (info)
+    ;; TODO: based on kernel, should change the major mode
+    (ob-ipython--create-kernel (->> info (nth 2) (assoc :session) cdr
+                                    ob-ipython--normalize-session)
+                               (->> info (nth 2) (assoc :kernel) cdr))
+    ;; Support for python.el's "send-code" commands within edit buffers.
+    (setq-local python-shell-buffer-name
+                (format "Python:ob-ipython-%s" (->> info (nth 2) (assoc :session) cdr
+                                                    ob-ipython--normalize-session)))
+    (setq-local
+     default-directory (format "%s" (->> info (nth 2) (assoc :pydir) cdr
+                                         ob-ipython--normalize-session)))
+    (ob-ipython-mode 1))
+  (advice-add 'org-babel-edit-prep:ipython :override #'*org-babel-edit-prep:ipython)
+
+  (defun *org-babel-execute:ipython (body params)
+    "Execute a block of IPython code with Babel.
+This function is called by `org-babel-execute-src-block'."
+    (message default-directory)
+    (let ((session (cdr (assoc :session params))))
+      (org-babel-ipython-initiate-session session params))
+    (ob-ipython--clear-output-buffer)
+    (if (cdr (assoc :async params))
+        (ob-ipython--execute-async body params)
+      (ob-ipython--execute-sync body params)))
+
+  (defun *org-babel-ipython-initiate-session (&optional session params)
+    "Create a session named SESSION according to PARAMS."
+    (if (string= session "none")
+        (error "ob-ipython currently only supports evaluation using a session.
+Make sure your src block has a :session param.")
+      (when (not (s-ends-with-p ".json" session))
+        (ob-ipython--create-kernel (ob-ipython--normalize-session session)
+                                   (cdr (assoc :kernel params))))
+      (ob-ipython--create-repl (ob-ipython--normalize-session session) params)))
+
+  (defun *ob-ipython--create-repl (name &optional params)
+    (let ((cmd (s-join " " (ob-ipython--kernel-repl-cmd name))))
+      (if (string= "default" name)
+          (progn
+            (run-python cmd nil nil)
+            (format "*%s*" python-shell-buffer-name))
+        (if (string-match "^remote-.*ssh.json" name)
+            (when (not (ignore-errors (process-live-p (get-process (format "Python:ob-ipython-%s" name)))))
+              (let* ((remote (s-split "-" name))
+                     (remote-host (nth 1 remote))
+                     (remote-session (nth 3 remote)))
+                (ob-ipython-generate-local-path-from-remote remote-session remote-host params)))
+          (let* ((process-name (format "Python:ob-ipython-%s" name))
+                 (buf (python-shell-make-comint cmd process-name t))
+                 (proc (get-buffer-process process-name))
+                 (dir (cdr (assoc :pydir params))))
+            (if dir (with-current-buffer buf
+                      (setq-local default-directory dir)))
+            (sleep-for 1)
+            (format "*%s*" process-name))))))
+
+  (advice-add 'org-babel-ipython-initiate-session :override #'*org-babel-ipython-initiate-session)
+  (advice-add 'ob-ipython--create-repl :override #'*ob-ipython--create-repl)
+  (advice-add 'org-babel-execute:ipython :override #'*org-babel-execute:ipython))
+#+END_SRC
 
 ** Ox-hugo
 #+BEGIN_SRC emacs-lisp
@@ -357,12 +444,39 @@
 #+RESULTS:
 : org-define-error
 
+** Dired
+#+BEGIN_SRC emacs-lisp
+(use-package dired-narrow
+  :ensure t
+  :bind (:map dired-mode-map
+              ("/" . dired-narrow)))
+#+END_SRC
+
+#+RESULTS:
+=dired-narrow
+=   
+#+BEGIN_SRC emacs-lisp
+(use-package dired-quick-sort
+  :config (if (not (string-equal system-type "darwin"))
+  (dired-quick-sort-setup)
+  )
+)
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+#+RESULTS:
+| dired-quick-sort |
+
+** 
 * Custom code
 ** Shell in other buffer
 #+BEGIN_SRC emacs-lisp
 (defun shell-other-window ()
   "Open a `shell' in a new window."
-  (interactive)pP
+  (interactive)
   (let ((buf (shell)))
     (switch-to-buffer (other-buffer buf))
     (switch-to-buffer-other-window buf)))
@@ -378,3 +492,6 @@
     (package-install package)))
 
 
+
+#+RESULTS:
+: t

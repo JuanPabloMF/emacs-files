@@ -1,3 +1,4 @@
+
 #+STARTUP: overview
 * Personal Keybindings
 
@@ -33,7 +34,6 @@
 #+END_SRC
 
 #+RESULTS:
-: t
 
 ** Counsel
 
@@ -85,27 +85,84 @@
 
 #+RESULTS:
 : t
-** Avy
+** Org-mode
 #+BEGIN_SRC emacs-lisp
-  (use-package avy
-    :ensure t
-    :bind ("M-s" . avy-goto-char))
+(global-set-key "\C-ca" 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)
+     (emacs-lisp . t)
+     (C . t)
+     (js . t)
+     (ditaa . t)
+     (dot . t)
+     (org . t)
+     (shell . t )
+     (latex . t )
+       ))
 #+END_SRC
 
 #+RESULTS:
-: avy-goto-char
-
-** Ace window
 
 #+BEGIN_SRC emacs-lisp
-(use-package ace-window
+(use-package org-bullets
   :ensure t
   :config
-  (global-set-key (kbd "M-o") 'ace-window))
-  #+END_SRC
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+
+(use-package org-ac
+  :ensure t
+  :init (progn
+	  (require 'org-ac)
+	  (org-ac/config-default)
+	  ))
+
+(setq org-capture-templates
+      '(("a" "Appointment" entry (file  "~/Dropbox/orgfiles/gcal.org" )
+	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+	("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
+	 "* TODO %?\n" :prepend t)
+	))
+
+(use-package org-protocol
+  :demand
+  :config
+  (add-to-list 'org-capture-templates
+               '("p" "Protocol" entry (file "")
+                 "* TODO %?[[%:link][%:description]] %U\n%i\n" :prepend t))
+  (add-to-list 'org-capture-templates
+               '("L" "Protocol Link" entry (file "")
+                 "* TODO %?[[%:link][%:description]] %U\n" :prepend t)))
+
+
+(setq org-agenda-files (list "~/Dropbox/orgfiles/gcal.org"))
+#+END_SRC
 
 #+RESULTS:
-: t
+| ~/Dropbox/orgfiles/gcal.org |
+
+** Org-babel
+
+#+BEGIN_SRC emacs-lisp
+(setq org-confirm-babel-evaluate nil)   ;don't prompt me to confirm everytime I want to evaluate a block
+(setq org-src-fontify-natively t)
+;;; display/update images in the buffer after I evaluate
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
+
+(add-to-list 'org-structure-template-alist
+             '("p" "#+BEGIN_SRC ipython :session :exports both :results raw drawer\n?\n#+END_SRC"))
+#+END_SRC
+
+
+#+BEGIN_SRC emacs-lisp
+(use-package ob-ipython
+  :after (org ob)
+)
+#+END_SRC
 
 ** Hydra
 
@@ -279,170 +336,91 @@
 		      ("<" self-insert-command "ins")
 		      ("o" nil "quit"kk))
 		    )
-    )
+;; Hydra for org agenda (graciously taken from Spacemacs)
+    (global-set-key (kbd "C-c t")
+      (defhydra hydra-org-agenda (:pre (setq which-key-inhibit t)
+                                 :post (setq which-key-inhibit nil)
+                                 :hint none)
+  "
+Org agenda (_q_uit)
+
+^Clock^      ^Visit entry^              ^Date^             ^Other^
+^-----^----  ^-----------^------------  ^----^-----------  ^-----^---------
+_ci_ in      _SPC_ in other window      _ds_ schedule      _gr_ reload
+_co_ out     _TAB_ & go to location     _dd_ set deadline  _._  go to today
+_cq_ cancel  _RET_ & del other windows  _dt_ timestamp     _gd_ go to date
+_cj_ jump    _o_   link                 _+_  do later      ^^
+^^           ^^                         _-_  do earlier    ^^
+^^           ^^                         ^^                 ^^
+^View^          ^Filter^                 ^Headline^         ^Toggle mode^
+^----^--------  ^------^---------------  ^--------^-------  ^-----------^----
+_vd_ day        _ft_ by tag              _ht_ set status    _tf_ follow
+_vw_ week       _fr_ refine by tag       _hk_ kill          _tl_ log
+_vt_ fortnight  _fc_ by category         _hr_ refile        _ta_ archive trees
+_vm_ month      _fh_ by top headline     _hA_ archive       _tA_ archive files
+_vy_ year       _fx_ by regexp           _h:_ set tags      _tr_ clock report
+_vn_ next span  _fd_ delete all filters  _hp_ set priority  _td_ diaries
+_vp_ prev span  ^^                       ^^                 ^^
+_vr_ reset      ^^                       ^^                 ^^
+^^              ^^                       ^^                 ^^
+"
+  ;; Entry
+  ("hA" org-agenda-archive-default)
+  ("hk" org-agenda-kill)
+  ("hp" org-agenda-priority)
+  ("hr" org-agenda-refile)
+  ("h:" org-agenda-set-tags)
+  ("ht" org-agenda-todo)
+  ;; Visit entry
+  ("o"   link-hint-open-link :exit t)
+  ("<tab>" org-agenda-goto :exit t)
+  ("TAB" org-agenda-goto :exit t)
+  ("SPC" org-agenda-show-and-scroll-up)
+  ("RET" org-agenda-switch-to :exit t)
+  ;; Date
+  ("dt" org-agenda-date-prompt)
+  ("dd" org-agenda-deadline)
+  ("+" org-agenda-do-date-later)
+  ("-" org-agenda-do-date-earlier)
+  ("ds" org-agenda-schedule)
+  ;; View
+  ("vd" org-agenda-day-view)
+  ("vw" org-agenda-week-view)
+  ("vt" org-agenda-fortnight-view)
+  ("vm" org-agenda-month-view)
+  ("vy" org-agenda-year-view)
+  ("vn" org-agenda-later)
+  ("vp" org-agenda-earlier)
+  ("vr" org-agenda-reset-view)
+  ;; Toggle mode
+  ("ta" org-agenda-archives-mode)
+  ("tA" (org-agenda-archives-mode 'files))
+  ("tr" org-agenda-clockreport-mode)
+  ("tf" org-agenda-follow-mode)
+  ("tl" org-agenda-log-mode)
+  ("td" org-agenda-toggle-diary)
+  ;; Filter
+  ("fc" org-agenda-filter-by-category)
+  ("fx" org-agenda-filter-by-regexp)
+  ("ft" org-agenda-filter-by-tag)
+  ("fr" org-agenda-filter-by-tag-refine)
+  ("fh" org-agenda-filter-by-top-headline)
+  ("fd" org-agenda-filter-remove-all)
+  ;; Clock
+  ("cq" org-agenda-clock-cancel)
+  ("cj" org-agenda-clock-goto :exit t)
+  ("ci" org-agenda-clock-in :exit t)
+  ("co" org-agenda-clock-out)
+  ;; Other
+  ("q" nil :exit t)
+  ("gd" org-agenda-goto-date)
+  ("." org-agenda-goto-today)
+  ("gr" org-agenda-redo))
+    ))
 
 #+END_SRC
 
 #+RESULTS:
-
-** Dashboard
-
-#+BEGIN_SRC emacs-lisp
-(use-package dashboard
-  :config
-  (dashboard-setup-startup-hook))
-#+END_SRC
-
-#+END_SRC
-
-** Org-mode
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key (kbd "C-c c") 'org-capture)
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-(use-package org-bullets
-  :ensure t
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
-
-(use-package org-ac
-  :ensure t
-  :init (progn
-	  (require 'org-ac)
-	  (org-ac/config-default)
-	  ))
-
-(setq org-agenda-custom-commands
-      '(("c" "Simple agenda view"
-	 ((agenda "")
-	  (alltodo "")))))
-
-(setq org-agenda-files (list "~/Dropbox/orgfiles/gcal.org"))
-
-(setq org-capture-templates
-      '(("a" "Appointment" entry (file  "~/Dropbox/orgfiles/gcal.org" )
-	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-	("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
-	 "* TODO %?\n%u" :prepend t)
-	))
-#+END_SRC
-
-** Org-babel
-
-#+BEGIN_SRC emacs-lisp
-(setq org-confirm-babel-evaluate nil)   ;don't prompt me to confirm everytime I want to evaluate a block
-(setq org-src-fontify-natively t)
-;;; display/update images in the buffer after I evaluate
-(add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
-
-(add-to-list 'org-structure-template-alist
-             '("p" "#+BEGIN_SRC ipython :session :exports both :results raw drawer\n?\n#+END_SRC"))
-#+END_SRC
-
-<
-#+RESULTS:
-| /usr/bin | /bin | /usr/sbin | /sbin | /Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec-x86_64-10_9 | /Applications/Emacs.app/Contents/MacOS/libexec | /Applications/Emacs.app/Contents/MacOS/bin | /opt/local/bin |
-
-#+BEGIN_SRC emacs-lisp
-(use-package ob-ipython
-  :after (org ob)
-  :config (setq ob-ipython-resources-dir ".ob-ipython-resrc/")
-  (defvar jupyter-local-runtime-dir (substring (shell-command-to-string (concat "jupyter --runtime-dir")) 0 -1))
-  (defun ob-ipython-generate-local-path-from-remote (session host params)
-    "Copy remote config to local, start a jupyter console to generate a new one."
-    (let* ((runtime-dir (substring (shell-command-to-string
-                                    (concat "ssh " host " jupyter --runtime-dir")) 0 -1))
-           (runtime-file (concat runtime-dir "/" "kernel-" session ".json"))
-           (tramp-path (concat "/ssh:" host ":" runtime-file))
-           (tramp-copy (concat jupyter-local-runtime-dir "/remote-" host "-kernel-" session ".json"))
-           (local-path (concat "Python:ob-ipython-" (file-name-sans-extension (file-name-nondirectory tramp-copy)) "-ssh.json")))
-      ;; scp remote file to local
-      (copy-file tramp-path tramp-copy t)
-      ;; connect to remote use new config
-      (let* ((python-shell-interpreter-interactive-arg " console --simple-prompt")
-             (python-shell-completion-native-enable nil)
-             (buf (python-shell-make-comint
-                   (concat ob-ipython-command " console --simple-prompt --existing " tramp-copy " --ssh " host)
-                   (concat "" local-path) t))
-             (proc (get-buffer-process buf))
-             (dir (cdr (assoc :pydir params))))
-        (sleep-for 3)
-        (if dir (with-current-buffer buf
-                  (setq-local default-directory dir)))
-        (format "*%s*" proc))))
-  (defun *org-babel-edit-prep:ipython (info)
-    ;; TODO: based on kernel, should change the major mode
-    (ob-ipython--create-kernel (->> info (nth 2) (assoc :session) cdr
-                                    ob-ipython--normalize-session)
-                               (->> info (nth 2) (assoc :kernel) cdr))
-    ;; Support for python.el's "send-code" commands within edit buffers.
-    (setq-local python-shell-buffer-name
-                (format "Python:ob-ipython-%s" (->> info (nth 2) (assoc :session) cdr
-                                                    ob-ipython--normalize-session)))
-    (setq-local
-     default-directory (format "%s" (->> info (nth 2) (assoc :pydir) cdr
-                                         ob-ipython--normalize-session)))
-    (ob-ipython-mode 1))
-  (advice-add 'org-babel-edit-prep:ipython :override #'*org-babel-edit-prep:ipython)
-
-  (defun *org-babel-execute:ipython (body params)
-    "Execute a block of IPython code with Babel.
-This function is called by `org-babel-execute-src-block'."
-    (message default-directory)
-    (let ((session (cdr (assoc :session params))))
-      (org-babel-ipython-initiate-session session params))
-    (ob-ipython--clear-output-buffer)
-    (if (cdr (assoc :async params))
-        (ob-ipython--execute-async body params)
-      (ob-ipython--execute-sync body params)))
-
-  (defun *org-babel-ipython-initiate-session (&optional session params)
-    "Create a session named SESSION according to PARAMS."
-    (if (string= session "none")
-        (error "ob-ipython currently only supports evaluation using a session.
-Make sure your src block has a :session param.")
-      (when (not (s-ends-with-p ".json" session))
-        (ob-ipython--create-kernel (ob-ipython--normalize-session session)
-                                   (cdr (assoc :kernel params))))
-      (ob-ipython--create-repl (ob-ipython--normalize-session session) params)))
-
-  (defun *ob-ipython--create-repl (name &optional params)
-    (let ((cmd (s-join " " (ob-ipython--kernel-repl-cmd name))))
-      (if (string= "default" name)
-          (progn
-            (run-python cmd nil nil)
-            (format "*%s*" python-shell-buffer-name))
-        (if (string-match "^remote-.*ssh.json" name)
-            (when (not (ignore-errors (process-live-p (get-process (format "Python:ob-ipython-%s" name)))))
-              (let* ((remote (s-split "-" name))
-                     (remote-host (nth 1 remote))
-                     (remote-session (nth 3 remote)))
-                (ob-ipython-generate-local-path-from-remote remote-session remote-host params)))
-          (let* ((process-name (format "Python:ob-ipython-%s" name))
-                 (buf (python-shell-make-comint cmd process-name t))
-                 (proc (get-buffer-process process-name))
-                 (dir (cdr (assoc :pydir params))))
-            (if dir (with-current-buffer buf
-                      (setq-local default-directory dir)))
-            (sleep-for 1)
-            (format "*%s*" process-name))))))
-
-  (advice-add 'org-babel-ipython-initiate-session :override #'*org-babel-ipython-initiate-session)
-  (advice-add 'ob-ipython--create-repl :override #'*ob-ipython--create-repl)
-  (advice-add 'org-babel-execute:ipython :override #'*org-babel-execute:ipython))
-#+END_SRC
-
-** Ox-hugo
-#+BEGIN_SRC emacs-lisp
-(use-package ox-hugo
-  :after ox)
-#+END_SRC
-
-#+RESULTS:
-: org-define-error
 
 ** Dired
 #+BEGIN_SRC emacs-lisp
@@ -470,7 +448,114 @@ Make sure your src block has a :session param.")
 #+RESULTS:
 | dired-quick-sort |
 
-** 
+** Avy
+#+BEGIN_SRC emacs-lisp
+  (use-package avy
+    :ensure t
+    :bind ("M-s" . avy-goto-char))
+#+END_SRC
+
+#+RESULTS:
+: avy-goto-char
+
+** Ace window
+
+#+BEGIN_SRC emacs-lisp
+(use-package ace-window
+  :ensure t
+  :config
+  (global-set-key (kbd "M-o") 'ace-window))
+  #+END_SRC
+
+#+RESULTS:
+: t
+
+** Dashboard
+
+#+BEGIN_SRC emacs-lisp
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+#+END_SRC
+
+#+END_SRC
+
+** Ox-hugo
+#+BEGIN_SRC emacs-lisp
+(use-package ox-hugo
+  :after ox)
+#+END_SRC
+
+#+RESULTS:
+: org-define-error
+
+** Google Calendar
+
+#+BEGIN_SRC emacs-lisp
+(setq package-check-signature nil)
+
+(use-package org-gcal
+  :ensure t
+  :config
+  (setq org-gcal-client-id "1075909078442-0q11m4blulnbn4aofc4muqfqu4khjkad.apps.googleusercontent.com"
+	org-gcal-client-secret "DiLslRSpqooaqcRR-JAaMSLP"
+	org-gcal-file-alist '(("juanpablo@ararads.com" .  "~/Dropbox/orgfiles/gcal.org"))))
+
+(add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync) ))
+(add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync) ))
+#+END_SRC
+
+#+RESULTS:
+| lambda | nil | (org-gcal-sync) |
+
+** Slack (Incomplete)
+
+I haven't yet been able to make this 
+(el-get-bundle elpa:slack)
+(use-package slack
+  :commands (slack-start)
+  :init
+  (setq slack-buffer-emojify t) ;; if you want to enable emoji, default nil
+  (setq slack-prefer-current-team t)
+  :config
+  (slack-register-team
+   :name "ararateam"
+   :default t
+   :client-id "06e67993-1530209577.296"
+   :client-secret "t2p3m1s1"
+   :token "xoxs-12426064019-12430867936-389671869524-f4ee41accd"
+   :subscribed-channels '(general)
+    :full-and-display-names t)
+)
+
+(use-package alert
+  :commands (alert)
+  :init
+  (setq alert-default-style 'notifier))
+
+** Python IDE
+
+#+BEGIN_SRC emacs-lisp
+(use-package elpy
+    :ensure t
+    :config 
+    (elpy-enable))
+
+(use-package flycheck
+  :ensure t
+  :init
+  (global-flycheck-mode t))
+
+(use-package jedi
+  :ensure t
+  :init
+  (add-hook 'python-mode-hook 'jedi:setup)
+  (setq jedi:complete-on-dot t)
+)
+#+END_SRC
+
+#+RESULTS:
+
 * Custom code
 ** Shell in other buffer
 #+BEGIN_SRC emacs-lisp

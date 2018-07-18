@@ -87,8 +87,8 @@
 : t
 ** Org-mode
 #+BEGIN_SRC emacs-lisp
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key (kbd "C-c c") 'org-capture)
+  (global-set-key "\C-ca" 'org-agenda)
+  (global-set-key (kbd "C-c c") 'org-capture)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -109,41 +109,46 @@
 #+RESULTS:
 
 #+BEGIN_SRC emacs-lisp
-(use-package org-bullets
-  :ensure t
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  (use-package org-bullets
+    :ensure t
+    :config
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+    (custom-set-variables
+     '(org-directory "~/Dropbox/orgfiles")
+     )
+    )
 
-(use-package org-ac
-  :ensure t
-  :init (progn
-	  (require 'org-ac)
-	  (org-ac/config-default)
+  (use-package org-ac
+    :ensure t
+    :init (progn
+	    (require 'org-ac)
+	    (org-ac/config-default)
+	    ))
+
+  (setq org-capture-templates
+	'(("a" "Appointment" entry (file  "~/Dropbox/orgfiles/gcal.org" )
+	   "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+	  ("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
+	   "* TODO %?\n" :prepend t)
 	  ))
 
-(setq org-capture-templates
-      '(("a" "Appointment" entry (file  "~/Dropbox/orgfiles/gcal.org" )
-	 "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-	("t" "To Do Item" entry (file+headline "~/Dropbox/orgfiles/todos.org" "To Do")
-	 "* TODO %?\n" :prepend t)
-	))
-
-(use-package org-protocol
-  :demand
-  :config
-  (add-to-list 'org-capture-templates
-               '("p" "Protocol" entry (file "")
-                 "* TODO %?[[%:link][%:description]] %U\n%i\n" :prepend t))
-  (add-to-list 'org-capture-templates
-               '("L" "Protocol Link" entry (file "")
-                 "* TODO %?[[%:link][%:description]] %U\n" :prepend t)))
+  (use-package org-protocol
+    :demand
+    :config
+    (add-to-list 'org-capture-templates
+		 '("p" "Protocol" entry (file "")
+		   "* TODO %?[[%:link][%:description]] %U\n%i\n" :prepend t))
+    (add-to-list 'org-capture-templates
+		 '("L" "Protocol Link" entry (file "")
+		   "* TODO %?[[%:link][%:description]] %U\n" :prepend t)))
 
 
-(setq org-agenda-files (list "~/Dropbox/orgfiles/gcal.org"))
+  (setq org-agenda-files (list "~/Dropbox/orgfiles/gcal.org"
+			       "~/Dropbox/orgfiles/todos.org"))
 #+END_SRC
 
 #+RESULTS:
-| ~/Dropbox/orgfiles/gcal.org |
+| ~/Dropbox/orgfiles/gcal.org | ~/Dropbox/orgfiles/todos.org |
 
 ** Org-babel
 
@@ -566,6 +571,19 @@ I haven't yet been able to make this
     (switch-to-buffer (other-buffer buf))
     (switch-to-buffer-other-window buf)))
 #+END_SRC
+** Create a python project
+#+BEGIN_SRC emacs-lisp
+  (defun create-python-project ()
+    (setq path default-directory)
+    (setq module-name
+	  (car (last (butlast (split-string path "/")))))
+    (print module-name)
+    (save-excursion
+      (switch-to-buffer (find-file (concat path module-name ".org")))
+      (save-buffer)
+      (kill-buffer))
+    )
+#+END_SRC
 
 * Install Packages 
 (setq package-list '(magit with-editor async magit-popup dash async let-alist git-commit with-editor async dash ghub let-alist dash async ghub let-alist git-commit with-editor async dash let-alist magit-popup dash async dash with-editor async counsel swiper ivy helm-descbinds helm helm-core async popup async hydra leuven-theme org-ac yaxception log4e auto-complete-pcmp yaxception log4e auto-complete popup org-bullets org-jira s request popup request s swiper ivy try use-package bind-key yaxception))
@@ -577,6 +595,3 @@ I haven't yet been able to make this
     (package-install package)))
 
 
-
-#+RESULTS:
-: t
